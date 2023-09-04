@@ -1,0 +1,79 @@
+---
+title: "KzSynITScom_metadata_prep"
+author: "Charles T. Bond"
+date: "09/04/2023"
+output: html_document
+---
+### Setup
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/chunk/Documents/DADA2/1216R/Fall_2023/metaprep")
+knitr::opts_knit$set(root.dir = "/Users/chunk/Documents/DADA2/1216R/metaprep")
+```
+
+```{r, library}
+library(tidyverse)
+library(RColorBrewer)
+#library(ggpubr)
+```
+
+```{r}
+## Field datasheet data on Leaf data, and long-term STIC data, are in the following table 'meta_base'
+setwd("/Users/chunk/Documents/DADA2/1216R/Fall_2023/metaprep")
+meta_base <- read.csv("meta_base_kzsynITS.csv")
+#View(meta_base)
+
+### AIMS Konza synoptic Physical Characteristics table was published seperately
+Konza_Synoptic_Physical_Characteristics <- read.csv("~/Documents/DADA2/1216R/Fall_2023/metaprep/Konza_Synoptic_Physical_Characteristics.csv")
+
+#merge by siteid
+meta_tab<- merge(meta_base,Konza_Synoptic_Physical_Characteristics, by="siteid", all=TRUE)
+```
+
+```{r}
+library(streamDAG)
+library(dplyr)
+## StreamDAG package contains STIC sensor-based measures of site connectivity across
+
+kon_full <- streamDAGs("konza_full")
+
+data(kon_coords)
+spatial.plot(kon_full, kon_coords[,3], kon_coords[,2], names = kon_coords[,1])
+A.mult(kon_full, power = 6, text.summary = TRUE)
+
+##Local Measures for 46/50 of the transects included in this stude
+local <- as.data.frame(local.summary(kon_full))
+t.local<- as.data.frame(t(local)) %>%
+  rownames_to_column(var="siteid")
+t.local$siteid <- substr(t.local$siteid, 1, nchar(t.local$siteid) - 2)
+
+#t.local$sticid<- row.names(t.local)
+```
+
+Merge stream dag local measures to meta_tab...
+```{r}
+meta_tab<- merge(meta_tab,t.local, by="siteid", all=TRUE)
+
+```
+
+Great, now add chlorophyll and EEA 
+```{r}
+## load chlorophyll data
+Chla<- read.csv("~/Documents/DADA2/1216R/Fall_2023/metaprep/CHLA_GP_approach3_20210605_20210607.V1.0.csv")
+#merge by siteid
+meta_tab<- merge(meta_tab,Chla, by="siteid", all=TRUE)
+
+
+### load enzyme data
+EEA<- read.csv("~/Documents/DADA2/1216R/Fall_2023/metaprep/KzSyn_EEA_overall_7_7_23.csv")
+#merge by siteid
+meta_tab<- merge(meta_tab,EEA, by="siteid", all=TRUE)
+```
+
+Done with the meta_data?
+```{r}
+
+write.csv(meta_tab, "~/Documents/DADA2/1216R/Fall_2023/metaprep/metatab.csv")
+
+```
